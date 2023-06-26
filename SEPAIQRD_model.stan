@@ -485,25 +485,25 @@ functions {
     // fixed parameters
 
 
-    real kappa_E = 1.0/3.1; //  1/ time from exposed to P/A
-    real kappa_A = 1.0/7.6; // 1/ time for non symptom to recover
-    real kappa_I_R = 1.0/5.7; // 1/infect to recover
-    real kappa_I_Q = 1.0/1.0;  // 1/time from infect to quarantine  **changed this so that kappa_I_R - kappa_I_Q is not negative**
-    real kappa_Q_R = 1.0/(5.7-1.0); // 1/time quarantine to recover
+    real kappa_E = 1/1.42; 
+    real kappa_A = 1/8.29; 
+    real kappa_I_R = 1/6.87; 
+    real kappa_I_Q = 1.0/1.0;  
+    real kappa_Q_R = 1/5.87; 
   
-    real alpha_1 = 0.79/100.0; // https://ourworldindata.org/grapher/united-states-rates-of-covid-19-deaths-by-vaccination-status?country=~All+ages
-    real alpha_2 = 0.7/100.0; // 0.7/100 
-    real alpha_3 = 0.14/100.0;
-    real alpha_4 = 0.12/100.0; // 0.12
-  
-  
-    real kappa_T_prime = 1.0/5.6; //1/(1/kappa_P_R'-1/kappa_P_T'),1/kappa_P_R' = 7.7 ,1/kappa_P_T' = 2.1 
-    real g = 0.45; // phase 1 to start
-  
-    real kappa_P = 1.0/2.1; // 
+    real alpha_1 = 0.003;
+    real alpha_2 = 0.0019; 
+    real alpha_3 = 0.0008; 
+    real alpha_4 = 0.0007; 
   
   
-    real epsilon = 0.96; // probability of willingness to be quarantined 0.96
+    real kappa_T_prime = 1.0/(8.29 - 2); 
+    real g = 0.45; 
+  
+    real kappa_P = 1.0/2; 
+  
+  
+    real epsilon = 0.96; 
   
     real beta_11 = 2.4844 * 0.02;
     real beta_12 = 1.104594  * 0.02;
@@ -525,9 +525,7 @@ functions {
     real beta_43 = 4.076515 * 0.02;
     real beta_44 = 6.33165  * 0.02;
 
-  // int cases_2[n_days];
-  // int cases_3[n_days];
-  // int cases_4[n_days];
+
   
 
     real dS1 = (-S1/nn1*(beta_11*P1+beta_11*I1+0.2*beta_11*A1 + 
@@ -771,7 +769,7 @@ transformed data {
 
 
 
-// unknown parameter sampli0.032n space
+
 
 parameters {
 
@@ -808,7 +806,6 @@ parameters {
   real CAR_p4;
   real CAR_p5;
   
-// ne0.032bin parameter for obs Inf in different vaccination status
   real<lower=0> phi_inv_1_p1;
   real<lower=0> phi_inv_2_p1;
   real<lower=0> phi_inv_3_p1;
@@ -920,8 +917,6 @@ transformed parameters{
 
 
 model {
-  // to be changed
-  //priors for vax
   f_1_p1 ~ normal(-1, 2);
   f_2_p1 ~ normal(-0.5, 2);
   f_3_p1 ~ normal(1.5, 2);
@@ -982,9 +977,7 @@ model {
   
 
   
-  //samplin0.032 distribution
-  //col(matrix x, int n) - The n-th column of matrix x. Here the number of infected people
-  
+
   
   
   cases[1, 1 : 24] ~ neg_binomial_2(out_I1[1   : 24],  phi_1_p1);
