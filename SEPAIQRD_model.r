@@ -157,7 +157,7 @@ data_sir <- list(n_days = n_days, y0 = init, t0 = 0,ts = t,
 
 
 
-model <- stan_model("8.21_revised.stan")
+model <- stan_model("SEPAIQRD_model.stan")
 
 
 
@@ -170,29 +170,25 @@ fit_sir_prior <- sampling(model,
 
 
 
- save.image("stan_results_8.21.RData")
- save.image(file = paste0("stan_results_8.21",as.character(Sys.time()), ".RData"))
+ load("updated_params_6_17.RData")
+ load("lse_result.RData")
 # 
-# 
-# 
-# # if(FALSE){
- library(rstan)
-load(file = "stan_results_8.21_old_oxford.RData")
-
-## original data
+library(rstan)
+ library(bayesplot)
+ library(coda)
 
 check_hmc_diagnostics(fit_sir_prior)
 
- # summary(fit_sir_prior)
- # #pars = c('k_1', 'k_2', 'k_3', 'k_4', 'CAR', 'CAR_f')
- # stan_dens(fit_sir_prior, pars = pars)
- # check_hmc_diagnostics(fit_sir_prior)
- traceplot(fit_sir_prior, pars = c("f_1_p1","f_2_p1","f_3_p1","f_4_p1","CAR_p1",
-                                   "f_1_p2","f_2_p2","f_3_p2","f_4_p2","CAR_p2",
-                                   "f_1_p3","f_2_p3","f_3_p3","f_4_p3","CAR_p3",
-                                   "f_1_p4","f_2_p4","f_3_p4","f_4_p4","CAR_p4",
-                                   "f_1_p5","f_2_p5","f_3_p5","f_4_p5","CAR_p5"),
-           nrow = 5, ncol = 5)
+
+
+mcmc_trace(fit_sir_prior, pars = c("f_1_p1","f_2_p1","f_3_p1","f_4_p1","CAR_p1",
+                                    "f_1_p2","f_2_p2","f_3_p2","f_4_p2","CAR_p2",
+                                    "f_1_p3","f_2_p3","f_3_p3","f_4_p3","CAR_p3",
+                                    "f_1_p4","f_2_p4","f_3_p4","f_4_p4","CAR_p4",
+                                    "f_1_p5","f_2_p5","f_3_p5","f_4_p5","CAR_p5"))+ 
+  xlab("Post-warmup iteration")
+
+ ggsave(trace_plot, file = "traceplot_params", width = 10, height =9)
 
  sir.summary <- summary(fit_sir_prior, pars = "pred_cases", probs = c(0.025, 0.5,0.975))
  post.025 <- sir.summary$summary[,4]
@@ -252,50 +248,8 @@ check_hmc_diagnostics(fit_sir_prior)
 
 
 
-# 
-# 
-# library(ggplot2)
-#  df_1 = data.frame(times, case1.mean, case1.025, case1.975, infect_data_unvac)
-#  g1 = ggplot(df_1,aes(times))+
-#    geom_ribbon(aes(ymax = case1.975, ymin = case1.025), fill = "grey70")+
-#    geom_line(aes(y =case1.mean ))+
-#    geom_point(aes(y = infect_data_unvac))+
-#    xlab("Time")+ylab("Unvaccinated Cases") +theme_classic()
-# g1
-# #
-#  df_2 = data.frame(times, case2.mean, case2.025, case2.975, infect_data_partial)
-# 
-#  g2 = ggplot(df_2,aes(times))+
-#    geom_ribbon(aes(ymax = case2.975, ymin = case2.025), fill = "grey70")+
-#    geom_line(aes(y =case2.mean ))+
-#    geom_point(aes(y = infect_data_partial))+
-#    xlab("Time")+ylab("Partially vaccinated Cases")+theme_classic()
-# g2#
-# 
-#  df_3 = data.frame(times, case3.mean, case3.025, case3.975, infect_data_complete,
-#                    case4.mean, case4.025, case4.975, infect_data_booster)
-# 
-#  g3 = ggplot(df_3,aes(times))+
-#    geom_ribbon(aes(ymax = case3.975, ymin = case3.025), fill = "grey70")+
-#    geom_line(aes(y =case3.mean))+
-#    geom_point(aes(y = infect_data_complete))+
-#    xlab("Time")+ylab("Completely vaccinated Cases")+theme_classic()
-# g3
-# 
-# 
-#  df_4 = data.frame(times, case4.mean, case4.025, case4.975, infect_data_booster)
-# 
-#  g4 = ggplot(df_4,aes(times))+
-#    geom_ribbon(aes(ymin = case4.975, ymax = case4.025), fill = "grey70")+
-#    geom_line(aes(y =case4.mean ))+
-#    geom_point(aes(y = infect_data_booster))+
-#    xlab("times")+ylab("Vaccinated with booster cases")+theme_classic()
-# g4
-# 
-# #
-#  install.packages("patchwork")
-#  library(patchwork)
-# g1|g2|g3|g4
+#
+
 
 
 times = seq(1, 150, 1)
@@ -318,116 +272,382 @@ case4.025.smooth = predict(loess(case4.025 ~ times))
 case4.975.smooth = predict(loess(case4.975 ~ times))
 
 library(ggplot2)
+library(zoo)
 times = seq(as.Date("2022-01-06"),
         as.Date("2022-06-04"),
         by = "day")
-df_1 = data.frame(times, case1.mean.smooth, case1.025.smooth, case1.975.smooth, infect_data_unvac)
-g1 = ggplot(df_1[1:64,],aes(times[1:64]))+
-  geom_ribbon(aes(ymax = case1.975.smooth[1:64], ymin = case1.025.smooth[1:64]), fill = "grey70")+
-  geom_line(aes(y =case1.mean.smooth[1:64]))+
-  geom_point(aes(y = infect_data_unvac[1:64]))+
-  xlab("Time")+ggtitle("Unvaccinated") +theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g1
+df_1 = data.frame(time = times, mcmc_est = case1.mean.smooth, 
+                  mcmc_lb = case1.025.smooth, mcmc_ub =case1.975.smooth, 
+                  acutual = infect_data_unvac)
+df_1_before = subset(df_1, df_1$time<= "2022-03-10")
+df_1_after = subset(df_1, df_1$time>"2022-03-10")
+df_1_before$lse_est = type1_before$pred
+df_1_after$lse_est = type1_after$pred
+
+df_2 = data.frame(time = times, mcmc_est = case2.mean.smooth, 
+                  mcmc_lb = case2.025.smooth, mcmc_ub =case2.975.smooth, 
+                  acutual = infect_data_partial)
+df_2_before = subset(df_2, df_2$time<= "2022-03-10")
+df_2_after = subset(df_2, df_2$time>"2022-03-10")
+df_2_before$lse_est = type2_before$pred
+df_2_after$lse_est = type2_after$pred
+
+df_3 = data.frame(time = times, mcmc_est = case3.mean.smooth, 
+                  mcmc_lb = case3.025.smooth, mcmc_ub =case3.975.smooth, 
+                  acutual = infect_data_complete)
+df_3_before = subset(df_3, df_3$time<= "2022-03-10")
+df_3_after = subset(df_3, df_3$time>"2022-03-10")
+df_3_before$lse_est = type3_before$pred
+df_3_after$lse_est = type3_after$pred
+
+df_4 = data.frame(time = times, mcmc_est = case4.mean.smooth, 
+                  mcmc_lb = case4.025.smooth, mcmc_ub =case4.975.smooth, 
+                  acutual = infect_data_booster)
+df_4_before = subset(df_4, df_4$time<= "2022-03-10")
+df_4_after = subset(df_4, df_4$time>"2022-03-10")
+df_4_before$lse_est = type4_before$pred
+df_4_after$lse_est = type4_after$pred
+
+
+p_1 <- ggplot(data = df_1_before)+
+  geom_point(aes(x = time, y = acutual))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est,colour = "SEPAIQRD model fit (MCMC)",
+                                                linetype = "SEPAIQRD model fit (MCMC)",
+                                                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub, ymin = mcmc_lb), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_1_before$lse_est,
+                                    df_1_before$mcmc_ub,
+                                    df_1_before$actual)))+
+  xlab("Time")+
+  ggtitle("(a) Unvaccinated")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
+p_1
+
+
+
+
+
+
+
 library(Metrics)
 rmse(infect_data_unvac[1:64],case1.mean.smooth[1:64])
-#110.0611
-df_2 = data.frame(times, case2.mean.smooth, case2.025.smooth, case2.975.smooth, infect_data_partial)
-
-g2 = ggplot(df_2[1:64,],aes(times)[1:64])+
-  geom_ribbon(aes(ymax = case2.975.smooth[1:64], ymin = case2.025.smooth[1:64]), fill = "grey70")+
-  geom_line(aes(y =case2.mean.smooth[1:64] ))+
-  geom_point(aes(y = infect_data_partial[1:64]))+
-  xlab("Time")+ggtitle("Partially Vaccinated")+theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g2
+rmse(df_1_before$lse_est, df_1_before$acutual)
+# updated: 110.3696
+p_2 <- ggplot(data = df_2_before)+
+  geom_point(aes(x = time, y = acutual))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est,colour = "SEPAIQRD model fit (MCMC)",
+                linetype = "SEPAIQRD model fit (MCMC)",
+                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub, ymin = mcmc_lb), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_2_before$lse_est,
+                                    df_2_before$mcmc_ub,
+                                    df_2_before$actual)))+
+  xlab("Time")+
+  ggtitle("(b) Partially Vaccinated")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
+p_2
 #
 rmse(infect_data_partial[1:64],case2.mean.smooth[1:64])
-# 43.35966
-df_3 = data.frame(times, case3.mean.smooth, case3.025.smooth, case3.975.smooth,
-                  case4.mean.smooth, case4.025.smooth, case4.975.smooth,
-                  infect_data_complete,
-               infect_data_booster)
+#45.40919
 
-g3 = ggplot(df_3[1:64,],aes(times)[1:64])+
-  geom_ribbon(aes(ymax = (case3.975.smooth+case4.975.smooth)[1:64],
-                  ymin = (case3.025.smooth+case4.025.smooth)[1:64]), fill = "grey70")+
-  geom_line(aes(y =(case3.mean.smooth+case4.mean.smooth)[1:64]))+
-  geom_point(aes(y = (infect_data_complete+infect_data_booster)[1:64]))+
-  xlab("Time")+ggtitle("Fully Vaccinated")+theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g3
-library(patchwork)
-g = g1|g2|g3
+df_3_before$mcmc_est_combine_34 = df_3_before$mcmc_est + df_4_before$mcmc_est 
+df_3_before$lse_est_combine_34 = df_3_before$lse_est + df_4_before$lse_est 
+df_3_before$mcmc_lb_combine_34 = df_3_before$mcmc_lb + df_4_before$mcmc_lb
+df_3_before$mcmc_ub_combine_34 = df_3_before$mcmc_ub + df_4_before$mcmc_ub
+df_3_before$acutual_combine_34 = df_3_before$acutual + df_4_before$acutual 
+  
+  
+p_3 <- ggplot(data = df_3_before)+
+  geom_point(aes(x = time, y = acutual_combine_34))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual_combine_34, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est_combine_34,colour = "SEPAIQRD model fit (MCMC)",
+                linetype = "SEPAIQRD model fit (MCMC)",
+                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub_combine_34, ymin = mcmc_lb_combine_34), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est_combine_34, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_3_before$lse_est_combine_34,
+                                    df_3_before$mcmc_ub_combine_34,
+                                    df_3_before$acutual_combine_34)))+
+  xlab("Time")+
+  ggtitle("(c) Fully Vaccinated")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
+p_3
 
-g
 
 rmse((infect_data_complete+infect_data_booster)[1:64],(case3.mean.smooth+case4.mean.smooth)[1:64])
 
 # 796.4487
+# updated 795.8538
+
+df_1_after$mcmc_est_combine_12 = df_1_after$mcmc_est + df_2_after$mcmc_est 
+df_1_after$lse_est_combine_12 = df_1_after$lse_est + df_2_after$lse_est 
+df_1_after$mcmc_lb_combine_12 = df_1_after$mcmc_lb + df_2_after$mcmc_lb
+df_1_after$mcmc_ub_combine_12 = df_1_after$mcmc_ub + df_2_after$mcmc_ub
+df_1_after$acutual_combine_12 = df_1_after$acutual + df_2_after$acutual 
+
+p_4 <- ggplot(data = df_1_after)+
+  geom_point(aes(x = time, y = acutual_combine_12))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual_combine_12, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est_combine_12,colour = "SEPAIQRD model fit (MCMC)",
+                linetype = "SEPAIQRD model fit (MCMC)",
+                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub_combine_12, ymin = mcmc_lb_combine_12), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est_combine_12, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_1_after$lse_est_combine_12,
+                                    df_1_after$mcmc_ub_combine_12,
+                                    df_1_after$acutual_combine_12)))+
+  xlab("Time")+
+  ggtitle("(d) Not Fully Vaccinated")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
 
 
-
-df_1 = data.frame(times, 
-                  case1.mean.smooth, case1.025.smooth, case1.975.smooth, 
-                  infect_data_unvac,
-                  case2.mean.smooth, case2.025.smooth, case2.975.smooth, 
-                  infect_data_partial)
-g4 = ggplot(df_1[65:150,],aes(times))+
-  geom_ribbon(aes(ymax = case1.975.smooth+case2.975.smooth, ymin = case1.025.smooth+case2.025.smooth), fill = "grey70")+
-  geom_line(aes(y =case1.mean.smooth+case2.mean.smooth))+
-  geom_point(aes(y = infect_data_unvac+infect_data_partial))+
-  xlab("Time")+ggtitle("Not Fully Vaccinated") +theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g4
 
 rmse((infect_data_unvac+infect_data_partial)[65:150],
      (case1.mean.smooth+case2.mean.smooth)[65:150])
-# 85.92086  
-df_3 = data.frame(times, case3.mean.smooth, case3.025.smooth, case3.975.smooth, infect_data_complete)
+# 85.92086
+# updated 85.81947
+p_5 <- ggplot(data = df_3_after)+
+  geom_point(aes(x = time, y = acutual))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est,colour = "SEPAIQRD model fit (MCMC)",
+                linetype = "SEPAIQRD model fit (MCMC)",
+                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub, ymin = mcmc_lb), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_3_after$lse_est,
+                                    df_3_after$mcmc_ub,
+                                    df_3_after$acutual)))+
+  xlab("Time")+
+  ggtitle("(e) Completely Vaccinated")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
 
-g5 = ggplot(df_3[65:150,],aes(times))+
-  geom_ribbon(aes(ymax = (case3.975.smooth),
-                  ymin = (case3.025.smooth)), fill = "grey70")+
-  geom_line(aes(y =case3.mean.smooth))+
-  geom_point(aes(y = infect_data_complete))+
-  xlab("Time")+ggtitle("Completely Vaccinated")+theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g5
+
+
+
 rmse(infect_data_complete[65:150],case3.mean.smooth[65:150])
 # 197.1549
-df_3 = data.frame(times, case4.mean.smooth, case4.025.smooth, case4.975.smooth, infect_data_booster)
+# updated 197.5961
 
-g6 = ggplot(df_3[65:150,],aes(times))+
-  geom_ribbon(aes(ymin = case4.975.smooth, ymax = case4.025.smooth), fill = "grey70")+
-  geom_line(aes(y =case4.mean.smooth ))+
-  geom_point(aes(y = infect_data_booster))+
-  xlab("Time")+ggtitle("Vaccinated with Booster Dose")+theme_classic()+
-  theme(legend.position = "bottom",axis.title.y = element_blank())+
-  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ") 
-g6
+p_6 <- ggplot(data = df_4_after)+
+  geom_point(aes(x = time, y = acutual))+
+  geom_line(aes(x = rollmean(time, 7, align = "center", fill = NA),
+                y = rollmean(acutual, 7, align = "center", fill = NA),
+                colour = "Centered 7-day moving average of case counts",
+                linetype = "Centered 7-day moving average of case counts",
+                size = "Centered 7-day moving average of case counts"))+
+  geom_line(aes(x = time, y = mcmc_est,colour = "SEPAIQRD model fit (MCMC)",
+                linetype = "SEPAIQRD model fit (MCMC)",
+                size = "SEPAIQRD model fit (MCMC)"))+
+  geom_ribbon(aes(x = time, ymax = mcmc_ub, ymin = mcmc_lb), fill = "lightgreen", alpha = 0.2)+
+  geom_line(aes(x = time, y = lse_est, 
+                colour = "D-SEPAIQRD model fit (NLS)", 
+                linetype = "D-SEPAIQRD model fit (NLS)",
+                size =  "D-SEPAIQRD model fit (NLS)"))+
+  scale_y_continuous(limits=c(0,max(df_4_after$lse_est,
+                                    df_4_after$mcmc_ub,
+                                    df_4_after$acutual)))+
+  xlab("Time")+
+  ggtitle("(f) Vaccinated with Booster Dose")+
+  theme_classic()+
+  scale_colour_manual("",values = c("SEPAIQRD model fit (MCMC)"="forestgreen",
+                                    "D-SEPAIQRD model fit (NLS)"= "darkorange",
+                                    "Centered 7-day moving average of case counts"="red"),
+                      label = c("Centered 7-day moving average of case counts",
+                                "SEPAIQRD model fit (NLS)",
+                                "SEPAIQRD model fit (MCMC)"))+
+  scale_linetype_manual("",values = c("SEPAIQRD model fit (MCMC)"="solid",
+                                      "D-SEPAIQRD model fit (NLS)"= "solid",
+                                      "Centered 7-day moving average of case counts"= "11"),
+                        label = c("Centered 7-day moving average of case counts",
+                                  "SEPAIQRD model fit (NLS)",
+                                  "SEPAIQRD model fit (MCMC)"))+
+  scale_size_manual("",values = c("SEPAIQRD model fit (MCMC)"=1,
+                                  "D-SEPAIQRD model fit (NLS)"= 1,
+                                  "Centered 7-day moving average of case counts"=1.5),
+                    label = c("Centered 7-day moving average of case counts",
+                              "SEPAIQRD model fit (NLS)",
+                              "SEPAIQRD model fit (MCMC)"))+
+  theme(legend.position = "bottom",axis.title.y = element_blank(),
+        plot.title = element_text(size = 12.5, face = "bold"),
+        legend.spacing.y = unit(0.3, 'cm'),
+        legend.key.size = unit(1.5, "cm"))+
+  scale_x_date(date_breaks = "14 day", date_labels =  "%m-%d ")
+
+
+
 # 523.4864
+# updated 509.3786
+
 rmse(infect_data_booster[65:150],case4.mean.smooth[65:150])
-g = (g1|g2|g3) /(g4|g5|g6)
-ggsave(g, file = "my_model_pred.pdf", width = 10, height =9)
+library(patchwork)
+g = (p_1|p_2|p_3) /(p_4|p_5|p_6) +plot_layout(guides = "collect")& theme(legend.position = "bottom")
+
+ggsave(g, file = "my_model_pred_updated_params.pdf", width = 10, height =9)
 # install.packages("patchwork")
 library(patchwork)
 g1|g2|g3
-#  # grid.arrange(g1,g2,g3,g4, ncol = 2, nrow = 2)
-# #
-# #
+
  library(Metrics)
 pred_tot = case4.mean.smooth+case3.mean.smooth+case2.mean.smooth+case1.mean.smooth
 actual_tot = infect_data_booster + infect_data_complete + infect_data_partial + infect_data_unvac
  rmse(actual_tot,
     pred_tot)
-# 840.0789
-## [0,1]
+ rmse(type1$pred + type2$pred + type3$pred + type4$pred, actual_tot)
+
 expit = function(x) 1/(1+exp(-x))
 library(latex2exp)
 f_1_p1_prior = expit(rnorm(100000, -1,2))
@@ -437,7 +657,7 @@ df_f1_p1 = data.frame(value = c(f_1_p1_prior, f_1_p1_post),
 
 
 g1 = ggplot(df_f1_p1, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_1^1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic() +
+  xlab(TeX("$f_{1,1}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic() +
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -452,7 +672,7 @@ df_f2_p1 = data.frame(value = c(f_2_p1_prior, f_2_p1_post),
 
 
 g2 = ggplot(df_f2_p1, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_2^1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{2,1}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -468,7 +688,7 @@ df_f3_p1 = data.frame(value = c(f_3_p1_prior, f_3_p1_post),
 
 
 g3 = ggplot(df_f3_p1, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_3^1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{3,1}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -482,7 +702,7 @@ df_f4_p1 = data.frame(value = c(f_4_p1_prior, f_4_p1_post),
 
 
 g4 = ggplot(df_f4_p1, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_4^1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{4,1}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -490,7 +710,6 @@ g4 = ggplot(df_f4_p1, aes(x = value, group = name, color = name)) + geom_density
 
 library(patchwork)
 g = g1|g2|g3|g4
-#ggsave(g, file = "f_phase_1.pdf", width = 15, height = 3)
 
 
 ########phase2
@@ -502,7 +721,7 @@ df_f1_p2 = data.frame(value = c(f_1_p2_prior, f_1_p2_post),
 
 
 g11 = ggplot(df_f1_p2, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_1^2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{1,2}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -517,7 +736,7 @@ df_f2_p2 = data.frame(value = c(f_2_p2_prior, f_2_p2_post),
 
 
 g21 = ggplot(df_f2_p2, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_2^2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{2,2}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -533,7 +752,7 @@ df_f3_p2 = data.frame(value = c(f_3_p2_prior, f_3_p2_post),
 
 
 g31 = ggplot(df_f3_p2, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_3^2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{3,2}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -547,7 +766,7 @@ df_f4_p2 = data.frame(value = c(f_4_p2_prior, f_4_p2_post),
 
 
 g41 = ggplot(df_f4_p2, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_4^2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{4,2}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -556,7 +775,6 @@ g41 = ggplot(df_f4_p2, aes(x = value, group = name, color = name)) + geom_densit
 library(patchwork)
 g = g1|g2|g3|g4
 
-#ggsave(g, file = "f_phase_2.pdf", width = 15, height = 3)
 
 
 
@@ -570,7 +788,7 @@ df_f1_p3 = data.frame(value = c(f_1_p3_prior, f_1_p3_post),
 
 
 g12 = ggplot(df_f1_p3, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_1^3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{1,3}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -585,7 +803,7 @@ df_f2_p3 = data.frame(value = c(f_2_p3_prior, f_2_p3_post),
 
 
 g22 = ggplot(df_f2_p3, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_2^3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{2,3}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -601,7 +819,7 @@ df_f3_p3 = data.frame(value = c(f_3_p3_prior, f_3_p3_post),
 
 
 g32 = ggplot(df_f3_p3, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_3^3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{3,3}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -615,7 +833,7 @@ df_f4_p3 = data.frame(value = c(f_4_p3_prior, f_4_p3_post),
 
 
 g42 = ggplot(df_f4_p3, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_4^3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{4,3}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -624,7 +842,6 @@ g42 = ggplot(df_f4_p3, aes(x = value, group = name, color = name)) + geom_densit
 library(patchwork)
 g = g1|g2|g3|g4
 
-#ggsave(g, file = "f_phase_3.pdf", width = 15, height = 3)
 
 
 
@@ -638,7 +855,7 @@ df_f1_p4 = data.frame(value = c(f_1_p4_prior, f_1_p4_post),
 
 
 g13 = ggplot(df_f1_p4, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_1^4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{1,4}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -653,7 +870,7 @@ df_f2_p4 = data.frame(value = c(f_2_p4_prior, f_2_p4_post),
 
 
 g23 = ggplot(df_f2_p4, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_2^4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{2,4}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -669,7 +886,7 @@ df_f3_p4 = data.frame(value = c(f_3_p4_prior, f_3_p4_post),
 
 
 g33 = ggplot(df_f3_p4, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_3^4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{3,4}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -683,7 +900,7 @@ df_f4_p4 = data.frame(value = c(f_4_p4_prior, f_4_p4_post),
 
 
 g43 = ggplot(df_f4_p4, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_4^4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{4,4}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -692,7 +909,6 @@ g43 = ggplot(df_f4_p4, aes(x = value, group = name, color = name)) + geom_densit
 library(patchwork)
 g = g1|g2|g3|g4
 
-#ggsave(g, file = "f_phase_4.pdf", width = 15, height = 3)
 
 
 
@@ -706,7 +922,7 @@ df_f1_p5 = data.frame(value = c(f_1_p5_prior, f_1_p5_post),
 
 
 g14 = ggplot(df_f1_p5, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_1^5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{1,5}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -721,7 +937,7 @@ df_f2_p5 = data.frame(value = c(f_2_p5_prior, f_2_p5_post),
 
 
 g24 = ggplot(df_f2_p5, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_2^5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{2,5}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -737,7 +953,7 @@ df_f3_p5 = data.frame(value = c(f_3_p5_prior, f_3_p5_post),
 
 
 g34 = ggplot(df_f3_p5, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_3^5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{3,5}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -751,7 +967,7 @@ df_f4_p5 = data.frame(value = c(f_4_p5_prior, f_4_p5_post),
 
 
 g44 = ggplot(df_f4_p5, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$f_4^5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$f_{4,5}$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -761,15 +977,6 @@ g44 = ggplot(df_f4_p5, aes(x = value, group = name, color = name)) + geom_densit
 library(patchwork)
 g = g1|g2|g3|g4
 
-#ggsave(g, file = "f_phase_5.pdf", width = 15, height = 3)
-
-# orginal_scale_plot = (g1|g2|g3|g4)/
-#   (g11|g21|g31|g41)/
-#   (g12|g22|g32|g42)/
-#   (g13|g23|g33|g43)/
-#   (g14|g24|g34|g44) +plot_layout(guides = "collect")& theme(legend.position = "bottom")
-
-# ggsave(orginal_scale_plot, file = "original_scale_f_ij_revised.pdf", width = 25, height = 25)
 
 
 
@@ -784,7 +991,7 @@ df_car_p1 = data.frame(value = c(car_p1_prior, car_p1_post),
 
 
 gcarp1 = ggplot(df_car_p1, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$CAR^1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$CAR_1$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -798,7 +1005,7 @@ df_car_p2 = data.frame(value = c(car_p2_prior, car_p2_post),
 
 
 gcarp2 = ggplot(df_car_p2, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$CAR^2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$CAR_2$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -812,7 +1019,7 @@ df_car_p3 = data.frame(value = c(car_p3_prior, car_p3_post),
 
 
 gcarp3 = ggplot(df_car_p3, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$CAR^3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$CAR_3$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -826,7 +1033,7 @@ df_car_p4 = data.frame(value = c(car_p4_prior, car_p4_post),
 
 
 gcarp4 = ggplot(df_car_p4, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$CAR^4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$CAR_4$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -839,7 +1046,7 @@ df_car_p5 = data.frame(value = c(car_p5_prior, car_p5_post),
 
 
 gcarp5 = ggplot(df_car_p5, aes(x = value, group = name, color = name)) + geom_density(aes(fill = name), alpha = 0.3)+
-  xlab(TeX("$CAR^5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
+  xlab(TeX("$CAR_5$"))+ xlim(0,1)+ ylim(0,60)+theme_classic()+
   theme(axis.text.y = element_text(size = 22),axis.text.x = element_text(size = 22) ,legend.title=element_blank(),
         legend.text=element_text(size=25),axis.title.x = element_text(size = 32),
         axis.title.y = element_text(size = 22))
@@ -850,5 +1057,5 @@ orginal_scale_plot = (g1|g2|g3|g4|gcarp1)/
   (g13|g23|g33|g43|gcarp4)/
   (g14|g24|g34|g44|gcarp5) +plot_layout(guides = "collect")& theme(legend.position = "bottom")
 
-ggsave(orginal_scale_plot, file = "my_model_para_plot.pdf", width = 28, height = 25)
+ggsave(orginal_scale_plot, file = "my_model_para_plot_updated_params_changeindex.pdf", width = 28, height = 25)
 
